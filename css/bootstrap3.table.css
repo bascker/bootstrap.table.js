@@ -1,0 +1,17 @@
+input.bs {
+    padding: 5px;
+    border: 1px solid #ccc;
+    color: #555;
+}
+
+.bs-icon {
+    color: #000;
+    padding: 4px;
+}
+
+.bs-icon:hover,
+.bs-link:hover {
+    cursor: pointer;
+    text-decoration: none;
+}
+
