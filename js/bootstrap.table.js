@@ -9,7 +9,6 @@
         var self = this;
         self._strs = new Array();
     }
-
     StringBuffer.prototype = {
         append: function (str) {
             var self = this;
@@ -40,7 +39,11 @@
             if (typeof obj != 'object') {
                 throw new Error('Param Error, The param obj is not a Object instance!');
             }
-            return new Field(obj['field'], obj['caption'], obj['editable']);
+            var _field = new Field(obj['field'], obj['caption'], obj['editable'], obj['type']);
+            if (typeof obj['width'] != 'undefined') {
+                _field.width = obj['width'];
+            }
+            return _field;
         },
         setWidth: function (width) {
             return typeof width == 'undefined' ? '' : 'width="' + width + '"';
@@ -69,9 +72,74 @@
             };
 
             return $.extend(true, {}, conf);
+        },
+        isExist: function ($e) {
+            return $e.length ? true : false;
         }
-        };
+    };
 
+    /**
+     * Modal: 模态框
+     * @param id
+     * @param label
+     * @param title
+     * @param body
+     * @constructor
+     */
+    var Modal = function (id, label, title, body) {
+        var self = this;
+        self.constructor = Modal;
+        self.id = id;
+        self.label = label;
+        self.title = title;
+        self.body = body;
+    };
+    Modal.prototype = {
+        create: function () {
+            var self = this, $doc = $(document.body), _sb = new StringBuffer();
+            _sb.append('<div id="').append(self.id).append('" class="modal fade" ').append('tabindex="-1" role="dialog" ')
+                .append('aria-labelledby="').append(self.label).append('" aria-hidden="true">')
+                .append('<div class="modal-dialog" role="document"><div class="modal-content"><div class="modal-header">')
+                .append('<h5 class="modal-title" id="').append(self.label).append('">').append(self.title).append('</h5>')
+                .append('<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>')
+                .append('<div class="modal-body">').append(self.body).append('</div>')
+                .append('<div class="modal-footer">')
+                .append('<button type="button" class="bs-close btn btn-secondary" data-dismiss="modal"><i class="fa fa-times"></i>&nbsp;关闭</button>')
+                .append('<button type="button" class="bs-sure btn btn-primary"><i class="fa fa-trash"></i>&nbsp;确定</button>')
+                .append('</div></div></div></div>');
+            $doc.append(_sb.toString());
+        },
+        get: function () {
+            var self = this, _sb = new StringBuffer();
+            _sb.append('#').append(self.id);
+            return $(_sb.toString());
+        },
+        toggle: function () {
+            var self = this, $modal = self.get();
+            if (!$modal.hasClass('show')) {
+                $modal.modal();
+            } else {
+                $modal.modal('hide');
+            }
+        },
+        show: function () {
+            var self = this;
+            self.toggle();
+        },
+        hide: function () {
+            var self = this;
+            self.toggle();
+        }
+    };
+
+    /**
+     * Operation: 表格操作按钮
+     * @param tag
+     * @param iconClass
+     * @param caption
+     * @param url
+     * @constructor
+     */
     var Operation = function (tag, iconClass, caption, url) {
         var self = this;
         self.constructor = Operation;
@@ -102,30 +170,29 @@
     };
 
     /**
-     * Table
-     * @param caption   表格名
-     * @param fields    Field 数组
-     * @param data      每一行的数据
+     * Table: 负责表格内容的生成
+     * @param element   表格元素
+     * @param config    包含 options 和 data
      */
-    var Table = function (caption, fields, data) {
+    var Table = function (element, config) {
         var self = this;
+        self.$elemnt = $(element);
         self.constructor = Table;
-        self.caption = caption;
-        self.fields = fields;
-        self._attrs = new Array();          // fieldNames, 用于 data 解析
-        self.data = data;
+        self.config = config;
+        self.fields = [];                          // Map, key-value: fieldName-field
+        self._attrs = [];                          // fieldNames, 用于 data 解析
+        config.fields.forEach(function (currentValue, index, array) {
+            var _field = currentValue;
+            self._attrs.push(_field.name);
+            self.fields[_field.name] = _field;
+        });
+        self.data = config.data;                   // 数组，每一个元素代表每一行的数据
     };
     Table.prototype = {
-        options: {
-            showOpField: false,         // 是否显示操作栏
-            showPagination: false,      // 是否显示分页
-            fadeToggle: false,          // 表单是否可折叠
-            tooltip: true               // 是否启用 bootstrap-tooltip
-        },
         getOpField: function () {
             var self = this,
                 _default = new Field('ops', '操作', false);
-            if (self.options.showOpField) {
+            if (self.config.showOpField) {
                 return _default;
             }
 
@@ -134,29 +201,29 @@
         defaultOps: function () {
             var _defaults = new Array();
             _defaults['edit'] = new Operation('a', 'bs-icon bs-edit fa fa-pencil', '编辑');
-            _defaults['delete'] = new Operation('a', 'bs-icon bs-delete fa fa-trash', '删除');
+            _defaults['remove'] = new Operation('a', 'bs-icon bs-remove fa fa-trash', '删除');
             _defaults['update'] = new Operation('a', 'bs-icon bs-update fa fa-check', '保存');
             _defaults['cancel'] = new Operation('a', 'bs-icon bs-cancel fa fa-times', '取消');
 
             return _defaults;
         },
         _initCaption: function () {
-            var self = this, _sb = new StringBuffer();
-            _sb.append('<div class="card-header">').append(self.caption).append('</div>');
-            return !self.caption ? '' : _sb.toString();
+            var self = this, _sb = new StringBuffer(), _caption = self.config.caption;
+            _sb.append('<div class="card-header">').append(_caption).append('</div>');
+            return !_caption ? '' : _sb.toString();
         },
         _initHeader: function () {
             var self = this, _sb = new StringBuffer();
             _sb.append('<thead  class="thead-dark"><tr>');
-            self.fields.forEach(function (currentValue, index, array) {
-                var field = currentValue;
-                self._attrs.push(field.name);
-                _sb.append('<th ').append(Tool.setWidth(field.width))
-                    .append(' data-field="').append(field.name).append('">')
-                    .append(field.caption).append('</th>');
-            });
+            for (var k in self.fields) {
+                var _field = self.fields[k];
+                _sb.append('<th ').append(Tool.setWidth(_field.width))
+                    .append(' data-field="').append(_field.name).append('">')
+                    .append(_field.caption).append('</th>');
+            }
+
             // 操作
-            if (self.options.showOpField) {
+            if (self.config.showOpField) {
                 var opField = self.getOpField();
                 opField.width = 400;
                 _sb.append('<th ').append(Tool.setWidth(opField.width))
@@ -173,9 +240,9 @@
                 var obj = currentValue;
                 _sb.append('<tr>');
                 self._attrs.forEach(function (currentValue, index, array) {
-                    var attr = currentValue;
+                    var attr = currentValue, _field = self.fields[attr];
                     _sb.append('<td data-field="').append(attr).append('">');
-                    switch (obj.type) {
+                    switch (_field.type) {
                         case 'link':
                             _sb.append('<a class="bs-link" href="').append(obj[attr]).append('">').append(obj[attr]).append('</a>');
                             break;
@@ -196,9 +263,9 @@
                     _sb.append('</td>');
                 });
 
-                if (self.options.showOpField) {
+                if (self.config.showOpField) {
                     var defaultOps = self.defaultOps();
-                    var opEdit = defaultOps['edit'], opDelete = defaultOps['delete'];
+                    var opEdit = defaultOps['edit'], opDelete = defaultOps['remove'];
                     _sb.append('<td>');
                     _sb.append(Tool.getOpHtml(opEdit)).append(Tool.getOpHtml(opDelete));
                     _sb.append('</td>');
@@ -211,7 +278,7 @@
         },
         _initFooter: function () {
             var self = this;
-            if (self.options.showPagination) {
+            if (self.config.showPagination) {
                 var _sb = new StringBuffer();
                 _sb.append('<tfoot><tr><td colspan="').append(self._attrs.length + 1).append('">')
                     .append('<nav aria-label="Page navigation">')
@@ -230,12 +297,19 @@
         },
         extra: function () {
             var self = this;
-            if (self.options.tooltip) {
+            if (self.config.tooltip) {
                 $("[data-toggle=tooltip]").tooltip();
             }
         },
+        listen: function () {
+            var self = this, $el = self.$elemnt;
+            $el.on('click', '.bs-edit', $.proxy(self, 'editRecord'));
+            $el.on('click', '.bs-update', $.proxy(self, 'updateRecord'));
+            $el.on('click', '.bs-cancel', $.proxy(self, 'cancelEdit'));
+            $el.on('click', '.bs-remove', $.proxy(self, 'removeRecord'));
+        },
         init: function () {
-            var self = this, _sb = new StringBuffer();
+            var self = this, $el = self.$elemnt, _sb = new StringBuffer();
             _sb.append('<div class="card">').append(self._initCaption())
                 .append('<table class="bs-table table table-hover">')
                 .append(self._initHeader())
@@ -243,7 +317,108 @@
                 .append(self._initFooter())
                 .append('</table></div>');
 
-            return _sb.toString();
+            $el.append(_sb.toString());
+            self.listen();
+            self.extra();
+        },
+        editRecord: function (event) {
+            var self = this, $btn = $(event.toElement), $record = $btn.parents('tr'), _sb = new StringBuffer();
+            self._dataBeforeEdit = [];
+
+            $record.find('td').each(function (index, element) {
+                var $td = $(element), fieldName = $td.data('field');
+                if (typeof fieldName == 'undefined') {  // 操作
+                    return true;           // each() 中 return true 相当于 continue, return false 相当于 break
+                }
+
+                var fieldValue = $td.text();
+                self._dataBeforeEdit[fieldName] = fieldValue;
+                var field = self.fields[fieldName];
+                if (field.editable) {
+                    _sb.append('<input class="bs" type="text" data-type="').append(field.type)
+                        .append('" value="').append(fieldValue).append('"/>');
+                } else {
+                    _sb.append(fieldValue);
+                }
+                $td.html(_sb.toString());
+                _sb.clear();
+            });
+
+            var $edit = $btn, $remove = $record.find('.bs-remove'), defaultOps = self.defaultOps();
+            $edit.removeClass(defaultOps['edit'].iconClass).addClass(defaultOps['update'].iconClass);
+            $edit.attr({'title': defaultOps['update'].caption, 'data-original-title': defaultOps['update'].caption});
+            $remove.removeClass(defaultOps['remove'].iconClass).addClass(defaultOps['cancel'].iconClass);
+            $remove.attr({'title': defaultOps['cancel'].caption, 'data-original-title': defaultOps['cancel'].caption});
+        },
+        updateRecord: function (event) {
+            var self = this, $btn = $(event.toElement), $record = $btn.parents('tr'), _sb = new StringBuffer();
+            $record.find('td').each(function () {
+                var $td = $(this), $text = $td.find('input[type=text]');
+                if (Tool.isExist($text)) {
+                    var val = $text.val();
+                    switch ($text.data('type')) {
+                        case 'link':
+                            _sb.append('<a class="bs-link" href="').append(val).append('">').append(val).append('</a>');
+                            break;
+                        default:
+                            _sb.append(val);
+                    }
+                    $td.html(_sb.toString());
+                    _sb.clear();
+                }
+            });
+
+            var $update = $btn, $cancel = $record.find('.bs-cancel'), defaultOps = self.defaultOps();
+            $update.removeClass(defaultOps['update'].iconClass).addClass(defaultOps['edit'].iconClass);
+            $update.attr({'title': defaultOps['edit'].caption, 'data-original-title': defaultOps['edit'].caption});
+            $cancel.removeClass(defaultOps['cancel'].iconClass).addClass(defaultOps['remove'].iconClass);
+            $cancel.attr({'title': defaultOps['remove'].caption, 'data-original-title': defaultOps['remove'].caption});
+        },
+        cancelEdit: function (event) {
+            var self = this, $btn = $(event.toElement), $record = $btn.parents('tr'), _sb = new StringBuffer();
+            $record.find('td').each(function (index, element) {
+                var $td = $(element),
+                    $text = $td.find('input[type=text]');
+                if ($text.length) {
+                    var val = $text.val();
+                    switch ($text.data('type')) {
+                        case 'link':
+                            _sb.append('<a class="bs-link" href="').append(val).append('">').append(val).append('</a>');
+                            break;
+                        default:
+                            _sb.append(self._dataBeforeEdit[$td.data('field')]);
+                    }
+                    $td.html(_sb.toString());
+                    _sb.clear();
+                }
+            });
+            var $cancel = $btn, $update = $record.find('.bs-update'), defaultOps = self.defaultOps();
+            $cancel.removeClass(defaultOps['cancel'].iconClass).addClass(defaultOps['remove'].iconClass);
+            $cancel.attr({'title': defaultOps['remove'].caption, 'data-original-title': defaultOps['remove'].caption});
+            $update.removeClass(defaultOps['update'].iconClass).addClass(defaultOps['edit'].iconClass);
+            $update.attr({'title': defaultOps['edit'].caption, 'data-original-title': defaultOps['edit'].caption});
+        },
+        removeRecord: function (event) {
+            var self = this, $btn = $(event.toElement), $record = $btn.parents('tr'), _sb = new StringBuffer();
+            $record.attr("data-remove", true);
+            var mDelete = new Modal('mDelete', 'mDeleteLabel', '警告', '一旦删除不可恢复，确定删除吗？');
+            mDelete.create();
+            mDelete.toggle();
+            var $modal = mDelete.get();
+            $modal.find('.bs-sure').attr("data-key", 1);
+            var _fn = function () {
+                mDelete.toggle();
+                $record.remove();
+            };
+            $modal.on('click', '.bs-sure', function () {
+                if (self.config.removeUrl) {
+                    var ajax = Tool.getAjaxConf(self.config.removeUrl, {}, _fn);
+                    $.ajax(ajax);
+                    return;
+                }
+
+                _fn();
+            });
         }
     };
 
@@ -253,7 +428,6 @@
         // 参数检查
         // ----------------------------------
         var config = $.extend(true, {}, $.fn.table.defaults, option, {data: data});
-        console.log(config);
         if (!config.columns) {
             throw new Error('Params Error!');
         }
@@ -266,27 +440,21 @@
             var obj = currentValue;
             fields.push(Tool.createField(obj));
         });
-        var table = new Table(config.caption, fields, config.data);
-
-        // 选项配置
-        table.options.showOpField = config.showOpField;
-        table.options.showPagination = config.showPagination;
-        table.options.tooltip = config.tooltip;
-
-        // HTML 生成
-        $tb.append(table.init());
-
-        // 额外效果
-        table.extra();
+        config.fields = fields;
+        var table = new Table($tb, config);
+        table.init();
     };
 
     $.fn.table.defaults = {
         caption: '',                    // 可选，表格说明
         columns: [],                    // 每一列的结构体, 必填
-        showOpField: true,
-        showPagination: false,
+        showOpField: true,              // 是否显示操作栏
+        showPagination: false,          // 是否显示分页组件
         tooltip: true,                  // 启用 bootstrap tooltip
-        fadeToggle: true               // 是否可以折叠
+        fadeToggle: true,               // 是否可以折叠
+        addUrl: '',
+        editUrl: '',
+        updateUrl: '',
+        removeUrl: ''
     };
-
 })(jQuery);

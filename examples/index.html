@@ -24,23 +24,38 @@
                         field: 'id',
                         caption: 'ID',
                         editable: false,
-                        width: '100px'
+                        width: 100
                     },
                     {
                         field: 'name',
                         caption: '姓名',
-                        editable: true,
-                        width: '300px'
+                        editable: true
+                    },
+                    {
+                        field: 'birth',
+                        caption: '出生日期',
+                        type: 'time',
+                        editable: false
+                    },
+                    {
+                        field: 'github',
+                        caption: 'Github',
+                        type: 'link',
+                        editable: true
                     }
                 ]
             };
 
             var data = [{
                 "id": 0,
-                "name": '救赎'
+                "name": '救赎',
+                'birth': '1996-06-06',
+                'github': 'https://github.com/bascker/bootstrap.table.js'
             }, {
                 "id": 1,
-                "name": '贪狼'
+                "name": '贪狼',
+                'birth': '1998-08-08',
+                'github': 'https://github.com/bascker/bootstrap.table.js'
             }];
 
             $('#table').table(conf, data);

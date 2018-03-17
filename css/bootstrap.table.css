@@ -3,6 +3,7 @@
 }
 
 input.bs {
+    width: 99%;
     padding: 5px;
     border: 1px solid #ccc;
     color: #555;
