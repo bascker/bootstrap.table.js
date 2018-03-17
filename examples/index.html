@@ -18,81 +18,32 @@
     <script type="text/javascript">
         $(function () {
             var conf = {
+                caption: '用户信息',
                 columns: [
                     {
                         field: 'id',
                         caption: 'ID',
-                        editable: false
+                        editable: false,
+                        width: '100px'
                     },
                     {
                         field: 'name',
                         caption: '姓名',
-                        editable: true
-                    },
-                    {
-                        field: 'pwd',
-                        caption: '密码',
-                        type: 'password',       // 默认为input[type=text], password 即 input[type=password]
-                        editable: true
-                    },
-                    {
-                        field: 'age',
-                        caption: '年龄',
-                        type: 'number',
-                        editable: true
-                    },
-                    {
-                        field: 'createTime',
-                        caption: '时间',
-                        type: 'time',           // time 类型默认格式 yyyy-MM-dd HH:MM
-                        editable: false         // 若为 true, 则使用 input[type=data]
-                    },
-                    {
-                        field: 'note',
-                        caption: '备注',
-                        type: 'textarea',
-                        editable: true
-                    },
-                    {
-                        field: 'blog',
-                        caption: '个人博客地址',
-                        type: 'link',
-                        editable: true
+                        editable: true,
+                        width: '300px'
                     }
-                ],
-                data: [{
-                    "id": 0,
-                    "name": '救赎',
-                    'pwd': 123456,
-                    'age': 24,
-                    'createTime': '2018-03-06 21:49',
-                    'note': 'Just a test data',
-                    'blog': 'www.blog.cn'
-                },{
-                    "id": 1,
-                    "name": '贪狼',
-                    'pwd': 123456,
-                    'age': 25,
-                    'createTime': '2018-03-06 21:50',
-                    'note': 'Just a test data111',
-                    'blog': 'www.blog2.cn'
-                }],
-                ops: [{
-                    tag: 'a',
-                    name: 'edit',
-                    title: '编辑',
-                    iconClass: 'fa fa-pencil',
-                    url: '/bootstrap/table/edit'
-                },{
-                    tag: 'a',
-                    name: 'delete',
-                    title: '删除',
-                    iconClass: 'fa fa-trash',
-                    url: '/bootstrap/table/delete',
-                    key: 'id'                       // 删除时传递给后台的属性
-                }]
+                ]
             };
-            $('#table').table(conf);
+
+            var data = [{
+                "id": 0,
+                "name": '救赎'
+            }, {
+                "id": 1,
+                "name": '贪狼'
+            }];
+
+            $('#table').table(conf, data);
         });
     </script>
 </head>
