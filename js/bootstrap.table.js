@@ -75,6 +75,15 @@
         },
         isExist: function ($e) {
             return $e.length ? true : false;
+        },
+        classToggle: function ($e, from, to) {
+            $e.removeClass(from).addClass(to);
+        },
+        tableSlideToggle: function ($table) {
+            // 不能直接用 $table.slideToggle(), 会变成 display: block 变成 display: none 的效果
+            $table.find('td').slideToggle();
+            $table.find('th').slideToggle();
+            $table.find('tr').slideToggle();
         }
     };
 
@@ -176,7 +185,7 @@
      */
     var Table = function (element, config) {
         var self = this;
-        self.$elemnt = $(element);
+        self.$element = $(element);
         self.constructor = Table;
         self.config = config;
         self.fields = [];                          // Map, key-value: fieldName-field
@@ -208,9 +217,19 @@
             return _defaults;
         },
         _initCaption: function () {
-            var self = this, _sb = new StringBuffer(), _caption = self.config.caption;
-            _sb.append('<div class="card-header">').append(_caption).append('</div>');
-            return !_caption ? '' : _sb.toString();
+            var self = this, _caption = self.config.caption;
+            if (!_caption) {
+                return '';
+            }
+
+            var _sb = new StringBuffer();
+            _sb.append('<div class="bs-table-caption card-header">').append(_caption);
+            if (self.config.fadeToggle) {
+                _sb.append('<i class="bs-icon bs-fade-toggle fa fa-angle-double-down pull-right" aria-hidden="true"></i>');
+            }
+            _sb.append('</div>');
+
+            return _sb.toString();
         },
         _initHeader: function () {
             var self = this, _sb = new StringBuffer();
@@ -302,14 +321,18 @@
             }
         },
         listen: function () {
-            var self = this, $el = self.$elemnt;
+            var self = this, $el = self.$element;
             $el.on('click', '.bs-edit', $.proxy(self, 'editRecord'));
             $el.on('click', '.bs-update', $.proxy(self, 'updateRecord'));
             $el.on('click', '.bs-cancel', $.proxy(self, 'cancelEdit'));
             $el.on('click', '.bs-remove', $.proxy(self, 'removeRecord'));
+
+            if (self.config.fadeToggle) {
+                $el.on('click', '.bs-table-caption', $.proxy(self, 'fadeToggle'));
+            }
         },
         init: function () {
-            var self = this, $el = self.$elemnt, _sb = new StringBuffer();
+            var self = this, $el = self.$element, _sb = new StringBuffer();
             _sb.append('<div class="card">').append(self._initCaption())
                 .append('<table class="bs-table table table-hover">')
                 .append(self._initHeader())
@@ -419,6 +442,17 @@
 
                 _fn();
             });
+        },
+        fadeToggle: function (event) {
+            var self = this, $el = self.$element, $caption = $(event.toElement),
+                $iconFadeToggle = $caption.find('.bs-fade-toggle'), $tb = $el.find('table');
+            if ($iconFadeToggle.hasClass("fa-angle-double-left")) {
+                Tool.classToggle($iconFadeToggle, 'fa-angle-double-left', 'fa-angle-double-down');
+                Tool.tableSlideToggle($tb);
+            } else if ($iconFadeToggle.hasClass("fa-angle-double-down")) {
+                Tool.classToggle($iconFadeToggle, 'fa-angle-double-down', 'fa-angle-double-left');
+                Tool.tableSlideToggle($tb);
+            }
         }
     };
 
@@ -451,7 +485,7 @@
         showOpField: true,              // 是否显示操作栏
         showPagination: false,          // 是否显示分页组件
         tooltip: true,                  // 启用 bootstrap tooltip
-        fadeToggle: true,               // 是否可以折叠
+        fadeToggle: false,               // 是否可以折叠
         addUrl: '',
         editUrl: '',
         updateUrl: '',
