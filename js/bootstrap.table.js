@@ -321,26 +321,23 @@
             }
         },
         listen: function () {
-            var self = this, $el = self.$element;
+            var self = this, $el = self.$element, $card = $el.parent();
             $el.on('click', '.bs-edit', $.proxy(self, 'editRecord'));
             $el.on('click', '.bs-update', $.proxy(self, 'updateRecord'));
             $el.on('click', '.bs-cancel', $.proxy(self, 'cancelEdit'));
             $el.on('click', '.bs-remove', $.proxy(self, 'removeRecord'));
 
             if (self.config.fadeToggle) {
-                $el.on('click', '.bs-table-caption', $.proxy(self, 'fadeToggle'));
+                $card.on('click', '.bs-table-caption', $.proxy(self, 'fadeToggle'));
             }
         },
         init: function () {
             var self = this, $el = self.$element, _sb = new StringBuffer();
-            _sb.append('<div class="card">').append(self._initCaption())
-                .append('<table class="bs-table table table-hover">')
-                .append(self._initHeader())
-                .append(self._initBody())
-                .append(self._initFooter())
-                .append('</table></div>');
-
+            $el.wrap('<div class="card"></div>').before(self._initCaption());
+            $el.addClass("bs-table table table-hover");
+            _sb.append(self._initHeader()).append(self._initBody()).append(self._initFooter());
             $el.append(_sb.toString());
+
             self.listen();
             self.extra();
         },
@@ -445,13 +442,13 @@
         },
         fadeToggle: function (event) {
             var self = this, $el = self.$element, $caption = $(event.toElement),
-                $iconFadeToggle = $caption.find('.bs-fade-toggle'), $tb = $el.find('table');
+                $iconFadeToggle = $caption.find('.bs-fade-toggle');
             if ($iconFadeToggle.hasClass("fa-angle-double-left")) {
                 Tool.classToggle($iconFadeToggle, 'fa-angle-double-left', 'fa-angle-double-down');
-                Tool.tableSlideToggle($tb);
+                Tool.tableSlideToggle($el);
             } else if ($iconFadeToggle.hasClass("fa-angle-double-down")) {
                 Tool.classToggle($iconFadeToggle, 'fa-angle-double-down', 'fa-angle-double-left');
-                Tool.tableSlideToggle($tb);
+                Tool.tableSlideToggle($el);
             }
         }
     };
