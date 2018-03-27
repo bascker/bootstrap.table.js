@@ -66,4 +66,4 @@
 </script>
 ~~~
 
-具体案例请查看 examples/index.html
+具体案例请查看 [examples/index.html](examples/index.html)

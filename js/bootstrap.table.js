@@ -425,14 +425,20 @@
             mDelete.create();
             mDelete.toggle();
             var $modal = mDelete.get();
-            $modal.find('.bs-sure').attr("data-key", 1);
+            var _extra = self.config.removeExtra.field;
+            $modal.find('.bs-sure').attr("data-extra", _extra);
             var _fn = function () {
                 mDelete.toggle();
                 $record.remove();
             };
             $modal.on('click', '.bs-sure', function () {
                 if (self.config.removeUrl) {
-                    var ajax = Tool.getAjaxConf(self.config.removeUrl, {}, _fn);
+                    var _sb = new StringBuffer();
+                    _sb.append('{"').append(_extra).append('":')
+                        .append($record.find('[data-field=' + _extra + ']').text())
+                        .append('}');
+
+                    var ajax = Tool.getAjaxConf(self.config.removeUrl, JSON.parse(_sb.toString()), _fn);
                     $.ajax(ajax);
                     return;
                 }
