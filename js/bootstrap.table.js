@@ -61,14 +61,15 @@
 
             return _sb.toString();
         },
-        getAjaxConf: function (url, data, success) {
+        getAjaxConf: function (url, data, success, error) {
             var conf = {
                 type: "POST",
                 url: url,
                 contentType: "application/json;charset=uft-8",
                 dataType: "json",
                 data: JSON.stringify(data),
-                success: success
+                success: success,
+                error: error
             };
 
             return $.extend(true, {}, conf);
@@ -371,28 +372,71 @@
             $remove.attr({'title': defaultOps['cancel'].caption, 'data-original-title': defaultOps['cancel'].caption});
         },
         updateRecord: function (event) {
-            var self = this, $btn = $(event.toElement), $record = $btn.parents('tr'), _sb = new StringBuffer();
-            $record.find('td').each(function () {
-                var $td = $(this), $text = $td.find('input[type=text]');
+            var self = this, $btn = $(event.toElement), $record = $btn.parents('tr'),
+                $tds = $record.find('td'), sb = new StringBuffer();
+            sb.append('{');
+
+            $tds.each(function (index, element) {
+                var $td = $(this), $text = $td.find('input[type=text]'), _last = false;
+                if (self.config.showOpField && (index == ($tds.length - 2))) {
+                    _last = true;
+                }
+
+                if (typeof $td.data('field') == 'undefined') {
+                    return true;
+                }
+
+                sb.append('"').append($td.data('field')).append('":"');
                 if (Tool.isExist($text)) {
-                    var val = $text.val();
-                    switch ($text.data('type')) {
-                        case 'link':
-                            _sb.append('<a class="bs-link" href="').append(val).append('">').append(val).append('</a>');
-                            break;
-                        default:
-                            _sb.append(val);
-                    }
-                    $td.html(_sb.toString());
-                    _sb.clear();
+                    sb.append($text.val());
+                } else {
+                    sb.append($td.text());
+                }
+                sb.append('"');
+
+                if (!_last) {
+                    sb.append(',');
                 }
             });
+            sb.append('}');
+            console.log(JSON.parse(sb.toString()));
 
-            var $update = $btn, $cancel = $record.find('.bs-cancel'), defaultOps = self.defaultOps();
-            $update.removeClass(defaultOps['update'].iconClass).addClass(defaultOps['edit'].iconClass);
-            $update.attr({'title': defaultOps['edit'].caption, 'data-original-title': defaultOps['edit'].caption});
-            $cancel.removeClass(defaultOps['cancel'].iconClass).addClass(defaultOps['remove'].iconClass);
-            $cancel.attr({'title': defaultOps['remove'].caption, 'data-original-title': defaultOps['remove'].caption});
+            var _fn_success = function () {
+                $tds.each(function () {
+                    var $td = $(this), $text = $td.find('input[type=text]');
+                    if (Tool.isExist($text)) {
+                        var val = $text.val(), _sb = new StringBuffer();
+                        switch ($text.data('type')) {
+                            case 'link':
+                                _sb.append('<a class="bs-link" href="').append(val).append('">').append(val).append('</a>');
+                                break;
+                            default:
+                                _sb.append(val);
+                        }
+                        $td.html(_sb.toString());
+                    }
+                });
+
+                var $update = $btn, $cancel = $record.find('.bs-cancel'), defaultOps = self.defaultOps();
+                $update.removeClass(defaultOps['update'].iconClass).addClass(defaultOps['edit'].iconClass);
+                $update.attr({'title': defaultOps['edit'].caption, 'data-original-title': defaultOps['edit'].caption});
+                $cancel.removeClass(defaultOps['cancel'].iconClass).addClass(defaultOps['remove'].iconClass);
+                $cancel.attr({
+                    'title': defaultOps['remove'].caption,
+                    'data-original-title': defaultOps['remove'].caption
+                });
+            };
+            var _fn_error = function (XMLHttpRequest, textStatus, errorThrown) {
+                // TODO: 创建一个提示信息的模态框
+                alert('更新失败');
+            };
+
+            if (self.config.updateUrl) {
+                var ajax = Tool.getAjaxConf(self.config.updateUrl, JSON.parse(sb.toString()), _fn_success(), _fn_error());
+                $.ajax(ajax);
+            } else {
+                _fn_success();
+            }
         },
         cancelEdit: function (event) {
             var self = this, $btn = $(event.toElement), $record = $btn.parents('tr'), _sb = new StringBuffer();
@@ -425,8 +469,11 @@
             mDelete.create();
             mDelete.toggle();
             var $modal = mDelete.get();
-            var _extra = self.config.removeExtra.field;
-            $modal.find('.bs-sure').attr("data-extra", _extra);
+            if (self.config.removeUrl) {
+                var _extra = self.config.removeExtra.field;
+                $modal.find('.bs-sure').attr("data-extra", _extra);
+            }
+
             var _fn = function () {
                 mDelete.toggle();
                 $record.remove();
@@ -490,7 +537,6 @@
         tooltip: true,                  // 启用 bootstrap tooltip
         fadeToggle: false,               // 是否可以折叠
         addUrl: '',
-        editUrl: '',
         updateUrl: '',
         removeUrl: ''
     };

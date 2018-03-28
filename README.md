@@ -34,12 +34,15 @@ bootstrap.table.js 配置项具体如下
 > 设置 caption 后, 才有效
 
 ### removeUrl
-*boolean* 类型, 可选项, 删除操作触发时, ajax 请求的后台地址.
+*string* 类型, 可选项, 删除操作触发时, ajax 请求的后台地址.
+> 需与 removeExtra 选项搭配
 
 ### removeExtra
 *object* 类型, 可选项, 删除操作触发时, 发送 ajax 请求时提交给后台的信息, 配置属性如下:
 * field: 发送时, 对应后台的实体属性名, 删除操作一般指定使用 id.
 
+### updateUrl
+*string* 类型, 可选项, 更新操作触发时, ajax 请求的后台地址.
 
 ## 使用
 通过定义一个`<table>`元素, 并在 JS 中传入配置和数据即可生成一个美观的、操作性强的表格。
